@@ -1,0 +1,108 @@
+#' Instalment of Loan
+#'
+#' It calculates the payment for a loan based on constant payments and a constant interest rate.
+#'
+#' @param rate refers to interest rate per month (if monthly instalment).
+#' @param nper means number of payments for loan.
+#' @param pv refers to loan amount.
+#' @param fv refers to future value after the full loan is repaid. It is generally zero.
+#' @param type means payments are due at the end of the period. type = 1 means payments are due at the beginning of the period.
+#'
+#' @return Numeric Value having Instalment of Loan
+#' @export
+#' @seealso \code{\link{IPMT}}
+#' @author Deepanshu Bhalla
+#' @examples
+#' PMT(0.085/12, 12*6, 50000)
+PMT <- function(rate, nper,pv, fv=0, type=0){
+  pmt = ifelse(rate!=0,
+               (rate*(fv+pv*(1+ rate)^nper))/((1+rate*type)*(1-(1+ rate)^nper)),
+               (-1*(fv+pv)/nper )
+  )
+
+  return(pmt)
+}
+
+#' Principal portion of instalment in each period
+#'
+#' It returns the payment on the principal for a given period for an investment based on periodic, constant payments and a constant interest rate.
+#'
+#' @param rate refers to interest rate per month (if monthly instalment).
+#' @param per refers to nth period.
+#' @param nper means number of payments for loan.
+#' @param pv refers to loan amount.
+#' @param fv refers to future value after the full loan is repaid. It is generally zero.
+#' @param type means payments are due at the end of the period. type = 1 means payments are due at the beginning of the period.
+#'
+#' @return Numeric Value having Instalment of Loan
+#' @export
+#' @seealso \code{\link{PMT}}
+#' @author Deepanshu Bhalla
+#' @examples
+#' PPMT(0.085/12, 1, 12*6, 50000)
+PPMT <- function(rate, per, nper, pv, fv=0, type=0){
+  ppmt = PMT(rate, nper,pv, fv=0, type=0) - IPMT(rate, per, nper, pv, fv=0, type=0)
+  return(ppmt)
+}
+
+#' Interest portion of instalment in each period
+#'
+#' It returns the payment on the interest for a given period for an investment based on periodic, constant payments and a constant interest rate.
+#'
+#' @param rate refers to interest rate per month (if monthly instalment).
+#' @param per refers to nth period.
+#' @param nper means number of payments for loan.
+#' @param pv refers to loan amount.
+#' @param fv refers to future value after the full loan is repaid. It is generally zero.
+#' @param type means payments are due at the end of the period. type = 1 means payments are due at the beginning of the period.
+#'
+#' @return Numeric Value having Instalment of Loan
+#' @export
+#' @seealso \code{\link{PPMT}}
+#' @author Deepanshu Bhalla
+#' @examples
+#' IPMT(0.085/12, 1, 12*6, 50000)
+IPMT <- function(rate, per, nper, pv, fv=0, type=0){
+  ipmt = -( ((1+rate)^(per-1)) * (pv*rate + PMT(rate, nper,pv, fv=0, type=0)) - PMT(rate, nper,pv, fv=0, type=0))
+  return(ipmt)
+}
+
+#' Amortisation Schedule
+#'
+#' It refers to table of periodic loan payments explaining the breakup of principal and interest in each instalment/EMI until the loan is repaid at the end of its stipulated term.
+#'
+#' @param rate refers to interest rate per month (if monthly instalment).
+#' @param per refers to nth period.
+#' @param nper means number of payments for loan.
+#' @param pv refers to loan amount.
+#' @param fv refers to future value after the full loan is repaid. It is generally zero.
+#' @param type means payments are due at the end of the period. type = 1 means payments are due at the beginning of the period.
+#'
+#' @return Numeric Value having Instalment of Loan
+#' @export
+#' @seealso \code{\link{PMT}}
+#' @author Deepanshu Bhalla
+#' @examples
+#' df = amortisationschedule(50000, 0.085, 12, 6)
+amortisationschedule <- function(amount, annualinterestrate, paymentsperyear, years) {
+
+  nper = paymentsperyear * years
+  rate = annualinterestrate / paymentsperyear
+
+  AmortisationSchedule <- tibble(
+    Principal = map_dbl(1:nper, function(x)
+      PPMT(rate,
+           x,
+           nper,
+           amount)),
+
+    Interest = map_dbl(1:nper, function(x)
+      IPMT(rate,
+           x,
+           nper,
+           amount))
+  ) %>% mutate(Instalment = Principal + Interest,
+               Balance = round(amount + cumsum(Principal),2))
+
+  return(AmortisationSchedule)
+}

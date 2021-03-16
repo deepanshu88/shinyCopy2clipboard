@@ -1,0 +1,317 @@
+library(shiny)
+library(shinyjs)
+
+# --------------------------
+# --- FEATURES -------------
+# --- HTML EDITOR ----------
+# --- COPY TO CLIPBOARD ----
+# --- HTML + CSS TO DOCX ---
+# --------------------------
+
+API <- "7p02e1tohxndorqcid61hh15w1gtla6wrjutj7mi73en667h"
+
+write.docx <- function(session, id, orientation = 'portrait', file = 'report.docx') {
+  paste0("var contentDocument = tinymce.get('",id, "').getDoc();
+        var content = '<!DOCTYPE html>' + contentDocument.documentElement.outerHTML;
+        var converted = htmlDocx.asBlob(content, {orientation: '", orientation, "'});
+        saveAs(converted, '", file, "');")
+}
+
+CopyButton <-
+  function(id,
+           label,
+           text = "No Text",
+           icon = icon("copy"),
+           width = NULL,
+           class = NULL,
+           modal = FALSE) {
+    
+    actionButton(
+      inputId = id,
+      label = label,
+      icon = icon,
+      width = width,
+      class = class,
+      `data-clipboard-text` = text,
+      onclick = if (!modal) {
+        paste0('new ClipboardJS(".btn", document.getElementById("',
+               id,
+               '"));')
+      }
+      else {
+        paste0('new ClipboardJS(".btn", { container: document.getElementById("',
+               id,
+               '") });')
+      }
+    )
+    
+  }
+
+CopyButtonUpdate <- function(session,
+                             id = "copybtn",
+                             label = "Copy to Clipboard",
+                             icon = NULL,
+                             text = "Sample Text",
+                             modal = FALSE) {
+  if (!is.null(icon))
+    icon <- as.character(icon)
+  
+  session$sendCustomMessage(
+    "copybtnUpdate",
+    list(
+      id = id,
+      label = label,
+      icon = icon,
+      `data-clipboard-text` = text,
+      onclick = if (!modal) {
+        paste0('new ClipboardJS(".btn", document.getElementById("',
+               id,
+               '"));')
+      }
+      else {
+        paste0('new ClipboardJS(".btn", { container: document.getElementById("',
+               id,
+               '") });')
+      }
+    )
+  )
+  
+}
+
+
+tinymce <- function(id, text = "<b> Hello World! </b>" ) {
+  tagList(
+    tags$form(method="post", tags$textarea(id=id, text)),
+    tags$script(paste0("tinymce.init({
+             selector: '#", id, "',
+             branding: false,
+             height: 300,
+             plugins: ['lists', 'table', 'link', 'image', 'code'],
+             toolbar1: 'bold italic forecolor backcolor | formatselect fontselect fontsizeselect | alignleft aligncenter alignright alignjustify',
+             toolbar2: 'undo redo removeformat bullist numlist table blockquote code superscript  subscript strikethrough link image'});"
+    ))
+  )
+}
+
+
+# UI
+ui <-  
+fluidPage(
+  tags$head(
+    useShinyjs(),
+    tags$script(
+      src = paste0(
+        "https://cdn.tiny.cloud/1/", API, "/tinymce/5/tinymce.min.js"
+      ),
+      referrerpolicy = "origin"
+    ),
+    tags$script(src = 'https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.8/clipboard.min.js'),
+    tags$script(src = "http://evidenceprime.github.io/html-docx-js/build/html-docx.js"),
+    tags$script(src = "http://evidenceprime.github.io/html-docx-js/test/vendor/FileSaver.js"),
+    tags$script(
+      "Shiny.addCustomMessageHandler('shinyMCE.update', function(data) {
+        tinyMCE.get(data.id).setContent(data.content);
+        $('#'+data.id).trigger('change');});"
+    ),
+    
+    tags$script(
+      "Shiny.addCustomMessageHandler('copybtnUpdate', function(data) {
+
+      var btn = $('button#' + data.id);
+      var ico = ' ';
+
+    if(data.hasOwnProperty('label')) {
+        btn.html(ico + data.label);
+     };
+
+    if(data.hasOwnProperty('data-clipboard-text')) {
+      btn.attr('data-clipboard-text', data['data-clipboard-text']);
+    };
+
+   if(data.hasOwnProperty('onclick')) {
+      btn.attr('onClick', data.onClick);
+    };
+
+  if(data.hasOwnProperty('icon')) {
+    var ch = btn.children();
+    if(ch.length == 0) {
+      btn.prepend(data.icon);
+    } else {
+      btn.find('i').replaceWith(data.icon);
+    };
+  };
+
+    })
+      "),
+    
+    tags$style('pre {height:240px;}')
+  ),
+  
+  # Tooltip
+tags$body(
+    
+tags$script("
+$('.btn').tooltip({
+  trigger: 'click',
+  placement: 'bottom'
+});
+
+function setTooltip(btn, message) {
+  $(btn).tooltip('hide')
+    .attr('data-original-title', message)
+    .tooltip('show');
+}
+
+function hideTooltip(btn) {
+  setTimeout(function() {
+    $(btn).tooltip('hide');
+  }, 1000);
+}
+
+function disposeTooltip(btn) {
+  setTimeout(function() {
+    $(btn).tooltip('destroy');
+  }, 1000);
+}
+
+var clipboard = new ClipboardJS('.btn');
+
+clipboard.on('success', function(e) {
+  setTooltip(e.trigger, 'Copied!');
+  hideTooltip(e.trigger);
+  disposeTooltip(e.trigger);
+});
+
+clipboard.on('error', function(e) {
+  setTooltip(e.trigger, 'Failed!');
+  hideTooltip(e.trigger);
+  disposeTooltip(e.trigger);
+});")
+    
+  ),
+  
+  titlePanel("HTML Generator"),
+  
+  fluidRow(
+    column(
+      width = 6,
+      tinymce('textcontent'),
+      br(),
+      actionButton(
+        "generatehtml",
+        "Generate HTML Code",
+        icon = icon("code"),
+        class = "btn-primary"
+      ),
+      actionButton("updatedata", "Update Editor", icon = icon("edit"))
+    ),
+    column(width = 2,
+           checkboxInput("somevalue", "Remove CSS Style", FALSE)),
+    column(
+      width = 6,
+      tags$pre(textOutput("rawText")),
+      column(
+        width = 3,
+        CopyButton(
+          "copybtn",
+          "Copy to Clipboard",
+          icon = icon("copy"),
+          text = "No HTML Code Found",
+          class = "btn-primary"
+        )
+      ),
+      
+      column(
+        width = 3,
+        actionButton(
+          "downloadData",
+          "Download Report",
+          icon = icon("download"),
+          class = "btn-primary"
+        ))
+    )
+  )
+)
+
+
+# SERVER
+server <- function(input, output, session) {
+
+  # Generate HTML
+  observeEvent(input$generatehtml, {
+        
+        shinyjs::runjs("Shiny.onInputChange('mytext', tinyMCE.get('textcontent').getContent());")
+        
+        output$rawText <- renderText({
+          req(input$mytext)
+          enc2utf8(input$mytext)
+        })
+        
+        # Set to Enabled MOde
+        updateCheckboxInput(session, "somevalue", value = FALSE)
+        
+  })
+    
+
+  # Reactive for HTML Code
+  text.final <- reactive({
+      
+      req(input$mytext)
+      
+      if (isTruthy(input$somevalue)) {
+        x <- gsub(pattern = '\\s+(style|width|height|border|cellspacing|cellpadding)="[^\"]*"', "", input$mytext)
+        x <- gsub(pattern = '<colgroup.*colgroup>', "", x)
+        x <- gsub(pattern = '</?span>', "", x)
+        x
+        
+      } else {
+        enc2utf8(input$mytext)
+      }
+      
+    })
+    
+    # Remove CSS Style
+    observeEvent(input$somevalue, {
+      
+      output$rawText <- renderText({
+        
+        req(input$mytext)
+        text.final()
+        
+      })
+    
+    })
+      
+    # Copy to Clipboard
+    observe({
+      
+      req(input$mytext)
+      CopyButtonUpdate(session, 
+                       id = "copybtn", 
+                       label = "Copy to Clipboard", 
+                       icon = icon("copy"),
+                       text = text.final()
+      )
+      
+    })
+    
+    # Update Button Trigger
+    observeEvent(input$updatedata, {
+        session$sendCustomMessage(type = "shinyMCE.update", 
+                                    list(id = 'textcontent', 
+                                         content = paste0('Random Number is <b>', sample(1:12, 1), '</b>')
+                                         ))
+      })
+      
+      
+      # Download Button Trigger
+     observeEvent(input$downloadData, {
+      shinyjs::runjs(write.docx(session, 'textcontent', 
+                                orientation = 'portrait',
+                                file = 'myreport.docx'))
+      })
+      
+  }
+    
+# App
+shinyApp(server=server, ui=ui)

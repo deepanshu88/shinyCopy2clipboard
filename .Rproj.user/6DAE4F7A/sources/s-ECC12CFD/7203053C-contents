@@ -1,0 +1,17 @@
+Package: shinyCopy2clipboard
+Type: Package
+Title: Copying text to the clipboard
+Version: 0.1.0
+Author: person("Deepanshu","Bhalla",email="deepanshu88.us@gmail.com",role=c("aut"),comment="Original creator")
+Maintainer: Deepanshu Bhalla <deepanshu88.us@gmail.com>
+Description: Copying text to the clipboard in Shiny App via clipboardjs
+License: GPL-2
+Depends:
+    R (>= 3.1)
+Imports: 
+    shiny
+Encoding: UTF-8
+RoxygenNote: 7.1.1
+Roxygen: list(markdown = TRUE)
+URL: https://github.com/sbihorel/rclipboard/
+BugReports: https://github.com/sbihorel/rclipboard/issues/

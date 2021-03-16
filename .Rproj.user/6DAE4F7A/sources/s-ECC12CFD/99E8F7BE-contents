@@ -1,0 +1,40 @@
+# UI
+ui <- fluidPage(
+  
+  # Setup
+  use_copy(),
+  
+  # Text Input 1
+  textInput("text", "Enter Your Text"),
+  
+  # Copy Button 1
+  CopyButton(
+    "copybtn",
+    "Copy to Clipboard",
+    icon = icon("copy"),
+    text = "No Text Found",
+    class = "btn-primary",
+    width = "150px"
+  )
+  
+)
+
+# Server
+server <- function(input, output, session) {
+  
+  observe({
+    
+    req(input$copybtn)
+    CopyButtonUpdate(session, 
+                     id = "copybtn", 
+                     label = "Copy to Clipboard", 
+                     icon = icon("copy"),
+                     text = input$text
+    )
+    
+  })
+  
+}
+
+# Run App
+shinyApp(ui = ui, server = server)

@@ -62,7 +62,8 @@ CopyButton <-
            icon = NULL,
            width = NULL,
            class = NULL,
-           modal = FALSE) {
+           modal = FALSE,
+           ...) {
 
   shiny::actionButton(
     inputId = id,
@@ -80,7 +81,7 @@ CopyButton <-
       paste0('new ClipboardJS(".btn", { container: document.getElementById("',
              id,
              '") });')
-    }
+    }, ...
   )
 
   }

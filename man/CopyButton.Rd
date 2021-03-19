@@ -8,10 +8,11 @@ CopyButton(
   id,
   label,
   text = "No Text",
-  icon = icon("copy"),
+  icon = NULL,
   width = NULL,
   class = NULL,
-  modal = FALSE
+  modal = FALSE,
+  ...
 )
 }
 \arguments{

@@ -73,11 +73,9 @@ server <- function(input, output, session) {
 shinyApp(ui = ui, server = server)
 ```
 
-<img src="man/figures/README-example-1.png" width="100%" />
-
 ### Learn More
 
 1. How to show SVG icon instead of text labelled button
 2. Detailed Example (including modal)
 
-Go to my blog [listendata.com](https://listendata.com/) to know more
+Go to my blog [listendata.com](https://www.listendata.com/2021/03/shinycopy2clipboard-copy-to-clipboard.html) to read more about the above two points
